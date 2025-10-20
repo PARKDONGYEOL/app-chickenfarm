@@ -6,4 +6,4 @@ const useExample = () => {
   return { state, setState };
 };
 
-export default useExample;
+export default useExample; /* d */
