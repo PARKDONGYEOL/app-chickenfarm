@@ -8,19 +8,37 @@ const TabLayout = () => {
       <Tabs.Screen
         name="(home)"
         options={{
-          title: "home"
+          title: "환경정보",
+          headerStyle: {
+            height: 90, // 원하는 
+          },
+          headerTitleStyle: {
+            paddingBottom: 10
+          }
         }}
       />
       <Tabs.Screen
         name="control"
         options={{
-          title: "control"
+          title: "control",
+          headerStyle: {
+            height: 90  // 원하는 높이
+          },
+          headerTitleStyle: {
+            paddingBottom: 10
+          }
         }}
       />
       <Tabs.Screen
         name="management"
         options={{
-          title: "management"
+          title: "management",
+          headerStyle: {
+            height: 90  // 원하는 높이
+          },
+          headerTitleStyle: {
+            paddingBottom: 10
+          }
         }}
       />
     </Tabs>
