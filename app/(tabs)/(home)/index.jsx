@@ -3,7 +3,7 @@ import { Image } from 'expo-image'
 import { useEffect, useState } from 'react'
 import { ScrollView, StyleSheet, Text, View } from 'react-native'
 import { CircularProgress } from 'react-native-circular-progress'
-
+import * as SecureStore from "expo-secure-store"
 
 const HomeScreen = () => {
   // 날씨 정보 api 키
@@ -18,6 +18,12 @@ const HomeScreen = () => {
   // 날씨 데이터 가져오기
   useEffect(() => {
     const getWeather = async () => {
+      // 로그인 데이터 저장
+      const getloginInfo = ()=>{
+        
+      }
+
+      // 날씨 정보
       const response = await axios.get('https://api.openweathermap.org/data/2.5/weather', {
         params: {
           q: "Ulsan",
@@ -33,7 +39,7 @@ const HomeScreen = () => {
     const getRealtimeData = async () => {
       try {
         const response = await axios.get('http://10.0.2.2:5000/api/realtime', {
-          timeout: 5000
+          timeout: 3000
         })
 
         if (response.data.success) {
@@ -49,7 +55,7 @@ const HomeScreen = () => {
     getWeather()
 
     // 실시간 업데이트 (5초마다로 변경 - 더 안정적)
-    const realtimeInterval = setInterval(getRealtimeData, 2000)
+    const realtimeInterval = setInterval(getRealtimeData, 3000)
 
     // 날씨는 10분마다 업데이트
     const weatherInterval = setInterval(getWeather, 600000)
@@ -330,7 +336,7 @@ const HomeScreen = () => {
             <CircularProgress
               size={120}
               width={15}
-              fill={calculateEnvScore()}
+              fill={Math.max(0.1, calculateEnvScore())}
               rotation={-90}
               arcSweepAngle={180}
               tintColor={getScoreGrade(calculateEnvScore()).color}
@@ -343,7 +349,7 @@ const HomeScreen = () => {
                 return (
                   <View style={{ alignItems: 'center' }}>
                     <Text style={{ fontSize: 24, fontWeight: 'bold' }}>{score}</Text>
-                    <Text style={{ fontSize: 12, color: '#666', marginBottom: 25 }}>{grade}</Text>
+                    <Text style={{ fontSize: 12, color: '#666' }}>{grade}</Text>
                   </View>
                 )
               }}
