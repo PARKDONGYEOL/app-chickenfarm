@@ -1,10 +1,15 @@
-import { StyleSheet, Text, View } from 'react-native'
+import { StyleSheet, Text, TouchableWithoutFeedback, View } from 'react-native'
+import ManualControl from './ManualControl'
+import { SafeAreaView } from 'react-native-safe-area-context'
+
 
 const ControlScreen = () => {
+
+
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Control</Text>
-    </View>
+    <TouchableWithoutFeedback style={styles.container}>
+        <ManualControl />
+    </TouchableWithoutFeedback>
   )
 }
 
@@ -12,9 +17,7 @@ export default ControlScreen
 
 const styles = StyleSheet.create({
   container: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
+    flex: 1
   },
   title: {
     fontSize: 24,
