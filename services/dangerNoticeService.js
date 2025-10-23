@@ -200,6 +200,39 @@ export const insertDangerNotice = async (noticeData) => {
 }
 
 /**
+ * 알림 삭제 (단일 또는 다중)
+ * @param {number|number[]} noticeNums - 알림 번호 또는 알림 번호 배열
+ * @returns {Promise<boolean>} 성공 여부
+ */
+export const deleteDangerNotices = async (noticeNums) => {
+  // 목업 데이터 모드
+  if (USE_MOCK_DATA) {
+    console.log('[MOCK MODE] Delete danger notices:', noticeNums)
+    return new Promise((resolve) => {
+      setTimeout(() => {
+        resolve(true)
+      }, 300)
+    })
+  }
+
+  // 실제 API 호출
+  try {
+    const nums = Array.isArray(noticeNums) ? noticeNums : [noticeNums]
+
+    // 각 알림을 개별적으로 삭제 (백엔드에 배치 삭제 API가 있다면 수정 필요)
+    const deletePromises = nums.map(num =>
+      api.delete(`/danger/delete/${num}`)
+    )
+
+    await Promise.all(deletePromises)
+    return true
+  } catch (error) {
+    console.error('Error deleting danger notices:', error)
+    throw error
+  }
+}
+
+/**
  * 백엔드 데이터를 React Native 앱 형식으로 변환
  * @param {Object} backendNotice - 백엔드 알림 데이터
  * @returns {Object} 앱에서 사용할 알림 데이터
@@ -218,6 +251,17 @@ export const transformNoticeToAlert = (backendNotice) => {
     'CO2': 'co2',
     'CO': 'co',
     'NO2': 'no2',
+  }
+
+  // 센서 한글 이름 매핑
+  const sensorKoreanNameMap = {
+    'temperature': '온도',
+    'humidity': '습도',
+    'light': '조도',
+    'ammonia': '암모니아',
+    'co2': '이산화탄소',
+    'co': '일산화탄소',
+    'no2': '이산화질소',
   }
 
   // 심각도 판단 (내용에서 추출하거나 기본값 사용)
@@ -262,11 +306,12 @@ export const transformNoticeToAlert = (backendNotice) => {
 
   const sensorType = sensorTypeMap[backendNotice.noticeCategory] || 'temperature'
   const severity = determineSeverity(backendNotice.noticeContent, backendNotice.noticeCategory)
+  const koreanName = sensorKoreanNameMap[sensorType] || backendNotice.noticeCategory
 
   return {
     id: backendNotice.noticeNum,
     sensorType: sensorType,
-    title: `${backendNotice.noticeCategory} Alert`,
+    title: koreanName,
     description: backendNotice.noticeContent,
     severity: severity,
     timeAgo: getTimeAgo(backendNotice.recTime),

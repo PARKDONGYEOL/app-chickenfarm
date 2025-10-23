@@ -12,7 +12,7 @@ import { SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
 import { useRouter } from 'expo-router'
 import AlertCard from '../../../components/management/AlertCard'
-import { getAlertsByPeriod } from '../../../services/dangerNoticeService'
+import { getAlertsByPeriod, deleteDangerNotices } from '../../../services/dangerNoticeService'
 
 const AlertsScreen = () => {
   const router = useRouter()
@@ -21,6 +21,9 @@ const AlertsScreen = () => {
   const [alerts, setAlerts] = useState([])
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
+  const [selectionMode, setSelectionMode] = useState(false)
+  const [selectedAlerts, setSelectedAlerts] = useState([])
+  const [sensorFilter, setSensorFilter] = useState('전체')
 
   // 농장 번호 (실제로는 로그인 정보나 설정에서 가져와야 함)
   const FARM_NUM = 1
@@ -76,30 +79,106 @@ const AlertsScreen = () => {
   }
 
   const handleAlertPress = (alert) => {
-    console.log('Alert pressed:', alert)
-    // 상세 화면으로 이동하거나 추가 액션 수행
+    if (selectionMode) {
+      // 선택 모드일 때는 선택/선택 해제
+      toggleAlertSelection(alert.id)
+    } else {
+      console.log('Alert pressed:', alert)
+      // 상세 화면으로 이동하거나 추가 액션 수행
+    }
   }
 
-  const criticalCount = alerts.filter((a) => a.severity === 'Critical').length
-  const warningCount = alerts.filter((a) => a.severity === 'Warning').length
+  const handleAlertLongPress = (alert) => {
+    // 롱프레스로 선택 모드 시작
+    if (!selectionMode) {
+      setSelectionMode(true)
+      setSelectedAlerts([alert.id])
+    }
+  }
+
+  const toggleAlertSelection = (alertId) => {
+    setSelectedAlerts(prev => {
+      if (prev.includes(alertId)) {
+        const newSelection = prev.filter(id => id !== alertId)
+        // 선택된 항목이 없으면 선택 모드 종료
+        if (newSelection.length === 0) {
+          setSelectionMode(false)
+        }
+        return newSelection
+      } else {
+        return [...prev, alertId]
+      }
+    })
+  }
+
+  const handleCancelSelection = () => {
+    setSelectionMode(false)
+    setSelectedAlerts([])
+  }
+
+  const handleDeleteSelected = async () => {
+    if (selectedAlerts.length === 0) return
+
+    try {
+      // 백엔드 API 호출하여 삭제
+      await deleteDangerNotices(selectedAlerts)
+      console.log('Successfully deleted alerts:', selectedAlerts)
+
+      // 삭제 후 UI에서 제거
+      setAlerts(prev => prev.filter(alert => !selectedAlerts.includes(alert.id)))
+      setSelectionMode(false)
+      setSelectedAlerts([])
+    } catch (error) {
+      console.error('Failed to delete alerts:', error)
+      // 에러 발생 시 사용자에게 알림 (필요시 Toast나 Alert 추가)
+      alert('알림 삭제에 실패했습니다.')
+    }
+  }
+
+  // 센서 필터링된 알림 목록
+  const filteredAlerts = sensorFilter === '전체'
+    ? alerts
+    : alerts.filter(alert => alert.title === sensorFilter)
+
+  const criticalCount = filteredAlerts.filter((a) => a.severity === 'Critical').length
+  const warningCount = filteredAlerts.filter((a) => a.severity === 'Warning').length
 
   const tabs = ['오늘', '주간', '월간', '전체']
+  const sensorTypes = ['전체', '온도', '습도', '조도', '암모니아', '이산화탄소', '일산화탄소', '이산화질소']
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['top']}>
       <View style={styles.container}>
         {/* Header */}
         <View style={styles.header}>
-          <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
-            <Ionicons name="arrow-back" size={24} color="#212121" />
-          </TouchableOpacity>
-          <Text style={styles.headerTitle}>Risk Alerts</Text>
-          <TouchableOpacity style={styles.refreshButton} onPress={onRefresh}>
-            <Ionicons name="refresh" size={24} color="#212121" />
-          </TouchableOpacity>
+          {selectionMode ? (
+            <>
+              <TouchableOpacity style={styles.backButton} onPress={handleCancelSelection}>
+                <Ionicons name="close" size={24} color="#212121" />
+              </TouchableOpacity>
+              <Text style={styles.headerTitle}>{selectedAlerts.length}개 선택됨</Text>
+              <TouchableOpacity
+                style={styles.deleteButton}
+                onPress={handleDeleteSelected}
+                disabled={selectedAlerts.length === 0}
+              >
+                <Ionicons name="trash" size={24} color={selectedAlerts.length > 0 ? "#FF4444" : "#BDBDBD"} />
+              </TouchableOpacity>
+            </>
+          ) : (
+            <>
+              <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
+                <Ionicons name="arrow-back" size={24} color="#212121" />
+              </TouchableOpacity>
+              <Text style={styles.headerTitle}>위험 알람</Text>
+              <TouchableOpacity style={styles.refreshButton} onPress={onRefresh}>
+                <Ionicons name="refresh" size={24} color="#212121" />
+              </TouchableOpacity>
+            </>
+          )}
         </View>
 
-        {/* Tab Filters */}
+        {/* Tab Filters - Period */}
         <View style={styles.tabContainer}>
           <ScrollView
             horizontal
@@ -128,24 +207,55 @@ const AlertsScreen = () => {
           </ScrollView>
         </View>
 
+        {/* Sensor Type Filters */}
+        <View style={styles.sensorFilterContainer}>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.tabScrollContent}
+          >
+            {sensorTypes.map((sensor) => (
+              <TouchableOpacity
+                key={sensor}
+                style={[
+                  styles.sensorTab,
+                  sensorFilter === sensor && styles.activeSensorTab,
+                ]}
+                onPress={() => setSensorFilter(sensor)}
+              >
+                <Text
+                  style={[
+                    styles.sensorTabText,
+                    sensorFilter === sensor && styles.activeSensorTabText,
+                  ]}
+                >
+                  {sensor}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+        </View>
+
         {/* Alert Summary */}
         <View style={styles.summaryContainer}>
-          <Text style={styles.summaryText}>
-            {alerts.length} alerts
-          </Text>
-          <View style={styles.summaryBadges}>
-            {criticalCount > 0 && (
-              <View style={styles.summaryBadge}>
-                <View style={[styles.badgeDot, { backgroundColor: '#FF4444' }]} />
-                <Text style={styles.badgeText}>{criticalCount} Critical</Text>
-              </View>
-            )}
-            {warningCount > 0 && (
-              <View style={styles.summaryBadge}>
-                <View style={[styles.badgeDot, { backgroundColor: '#FFA726' }]} />
-                <Text style={styles.badgeText}>{warningCount} Warning</Text>
-              </View>
-            )}
+          <View style={styles.summaryRow}>
+            <Text style={styles.summaryText}>
+              {filteredAlerts.length} alerts
+            </Text>
+            <View style={styles.summaryBadges}>
+              {criticalCount > 0 && (
+                <View style={styles.summaryBadge}>
+                  <View style={[styles.badgeDot, { backgroundColor: '#FF4444' }]} />
+                  <Text style={styles.badgeText}>{criticalCount} Critical</Text>
+                </View>
+              )}
+              {warningCount > 0 && (
+                <View style={styles.summaryBadge}>
+                  <View style={[styles.badgeDot, { backgroundColor: '#FFA726' }]} />
+                  <Text style={styles.badgeText}>{warningCount} Warning</Text>
+                </View>
+              )}
+            </View>
           </View>
         </View>
 
@@ -171,17 +281,19 @@ const AlertsScreen = () => {
                 <Text style={styles.retryButtonText}>Retry</Text>
               </TouchableOpacity>
             </View>
-          ) : alerts.length === 0 ? (
+          ) : filteredAlerts.length === 0 ? (
             <View style={styles.emptyContainer}>
               <Ionicons name="checkmark-circle-outline" size={64} color="#9E9E9E" />
               <Text style={styles.emptyText}>No alerts for this period</Text>
             </View>
           ) : (
-            alerts.map((alert) => (
+            filteredAlerts.map((alert) => (
               <AlertCard
                 key={alert.id}
                 alert={alert}
                 onPress={() => handleAlertPress(alert)}
+                onLongPress={() => handleAlertLongPress(alert)}
+                isSelected={selectedAlerts.includes(alert.id)}
               />
             ))
           )}
@@ -223,6 +335,9 @@ const styles = StyleSheet.create({
   refreshButton: {
     padding: 4,
   },
+  deleteButton: {
+    padding: 4,
+  },
   tabContainer: {
     backgroundColor: '#FFFFFF',
     borderBottomWidth: 1,
@@ -250,17 +365,47 @@ const styles = StyleSheet.create({
   activeTabText: {
     color: '#FFFFFF',
   },
+  sensorFilterContainer: {
+    backgroundColor: '#FFFFFF',
+    borderBottomWidth: 1,
+    borderBottomColor: '#E0E0E0',
+  },
+  sensorTab: {
+    paddingHorizontal: 16,
+    paddingVertical: 6,
+    marginRight: 8,
+    borderRadius: 16,
+    backgroundColor: '#E8F5E9',
+    borderWidth: 1,
+    borderColor: '#81C784',
+  },
+  activeSensorTab: {
+    backgroundColor: '#4CAF50',
+    borderColor: '#4CAF50',
+  },
+  sensorTabText: {
+    fontSize: 13,
+    fontWeight: '500',
+    color: '#2E7D32',
+  },
+  activeSensorTabText: {
+    color: '#FFFFFF',
+  },
   summaryContainer: {
     backgroundColor: '#FFFFFF',
     paddingHorizontal: 16,
     paddingVertical: 12,
     marginBottom: 8,
   },
+  summaryRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 16,
+  },
   summaryText: {
     fontSize: 16,
     fontWeight: '600',
     color: '#212121',
-    marginBottom: 8,
   },
   summaryBadges: {
     flexDirection: 'row',

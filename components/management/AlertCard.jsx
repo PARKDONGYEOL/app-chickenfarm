@@ -1,7 +1,7 @@
 import { StyleSheet, Text, View, TouchableOpacity } from 'react-native'
 import { Ionicons } from '@expo/vector-icons'
 
-const AlertCard = ({ alert, onPress }) => {
+const AlertCard = ({ alert, onPress, isSelected, onLongPress }) => {
   const getSeverityColor = (severity) => {
     switch (severity) {
       case 'Critical':
@@ -43,11 +43,17 @@ const AlertCard = ({ alert, onPress }) => {
 
   return (
     <TouchableOpacity
-      style={styles.card}
+      style={[styles.card, isSelected && styles.selectedCard]}
       onPress={onPress}
+      onLongPress={onLongPress}
       activeOpacity={0.7}
     >
       <View style={styles.cardContent}>
+        {isSelected && (
+          <View style={styles.checkboxContainer}>
+            <Ionicons name="checkmark-circle" size={24} color="#2196F3" />
+          </View>
+        )}
         <View style={[
           styles.iconContainer,
           { backgroundColor: getSensorBgColor(alert.sensorType, alert.severity) }
@@ -62,12 +68,7 @@ const AlertCard = ({ alert, onPress }) => {
         <View style={styles.contentContainer}>
           <View style={styles.headerRow}>
             <Text style={styles.title}>{alert.title}</Text>
-            <View style={styles.timeContainer}>
-              <Text style={styles.time}>{alert.timeAgo}</Text>
-              {alert.exactTime && (
-                <Text style={styles.exactTime}>{alert.exactTime}</Text>
-              )}
-            </View>
+            <Text style={styles.time}>{alert.timeAgo}</Text>
           </View>
 
           <Text style={styles.description}>{alert.description}</Text>
@@ -76,9 +77,14 @@ const AlertCard = ({ alert, onPress }) => {
             <View style={[styles.severityBadge, { backgroundColor: getSeverityColor(alert.severity) }]}>
               <Text style={styles.severityText}>{alert.severity}</Text>
             </View>
-            {alert.severity === 'Critical' && (
-              <View style={styles.criticalDot} />
-            )}
+            <View style={styles.rightFooter}>
+              {alert.severity === 'Critical' && (
+                <View style={styles.criticalDot} />
+              )}
+              {alert.exactTime && (
+                <Text style={styles.exactTime}>{alert.exactTime}</Text>
+              )}
+            </View>
           </View>
         </View>
       </View>
@@ -103,9 +109,19 @@ const styles = StyleSheet.create({
     shadowRadius: 3,
     elevation: 2,
   },
+  selectedCard: {
+    backgroundColor: '#E3F2FD',
+    borderWidth: 2,
+    borderColor: '#2196F3',
+  },
   cardContent: {
     flexDirection: 'row',
     padding: 16,
+  },
+  checkboxContainer: {
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 8,
   },
   iconContainer: {
     width: 48,
@@ -130,18 +146,10 @@ const styles = StyleSheet.create({
     color: '#212121',
     flex: 1,
   },
-  timeContainer: {
-    alignItems: 'flex-end',
-    marginLeft: 8,
-  },
   time: {
     fontSize: 12,
     color: '#9E9E9E',
-  },
-  exactTime: {
-    fontSize: 11,
-    color: '#757575',
-    marginTop: 2,
+    marginLeft: 8,
   },
   description: {
     fontSize: 14,
@@ -153,6 +161,15 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
+  },
+  rightFooter: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  exactTime: {
+    fontSize: 11,
+    color: '#757575',
   },
   severityBadge: {
     paddingHorizontal: 12,
