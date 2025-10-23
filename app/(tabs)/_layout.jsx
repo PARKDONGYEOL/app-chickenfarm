@@ -20,7 +20,7 @@ const TabLayout = () => {
       <Tabs.Screen
         name="management"
         options={{
-          title: "management"
+          headerShown: false
         }}
       />
     </Tabs>
