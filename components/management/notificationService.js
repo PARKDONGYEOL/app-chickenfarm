@@ -10,7 +10,7 @@ Notifications.setNotificationHandler({
   }),
 })
 
-// 알림 권한 요청
+// 알림 권한 요청 및 푸시 토큰 발급
 export const registerForPushNotificationsAsync = async () => {
   let token
 
@@ -33,10 +33,18 @@ export const registerForPushNotificationsAsync = async () => {
 
   if (finalStatus !== 'granted') {
     alert('Failed to get push token for push notification!')
-    return
+    return null
   }
 
-  return finalStatus
+  try {
+    // Expo 푸시 토큰 발급 (원격 알림용)
+    const projectId = '11d2c073-83a5-4a04-b664-bebb16c58411' // Expo 프로젝트 ID
+    token = (await Notifications.getExpoPushTokenAsync({ projectId })).data
+  } catch (error) {
+    return null
+  }
+
+  return token
 }
 
 // 센서 알림 전송

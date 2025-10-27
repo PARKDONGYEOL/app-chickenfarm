@@ -15,7 +15,7 @@ export const USE_MOCK_DATA = false  // ✅ 백엔드 서버 연결됨!
 // Android 에뮬레이터에서 테스트 시
 // const BASE_URL = 'http://10.0.2.2:8080'
 
-// iOS 시뮬레이터 또는 Expo Go에서 테스트 시
+// iOS 시뮬레이터 또는 웹 브라우저에서 테스트 시
 // const BASE_URL = 'http://localhost:8080'
 
 // 실제 기기 또는 Expo Go에서 테스트 시 (같은 Wi-Fi 네트워크)
@@ -31,14 +31,12 @@ const api = axios.create({
   },
 })
 
-// 요청 인터셉터 (로깅, 인증 토큰 추가 등)
+// 요청 인터셉터 (인증 토큰 추가 등)
 api.interceptors.request.use(
   (config) => {
-    console.log(`[API Request] ${config.method.toUpperCase()} ${config.url}`)
     return config
   },
   (error) => {
-    console.error('[API Request Error]', error)
     return Promise.reject(error)
   }
 )
@@ -46,11 +44,9 @@ api.interceptors.request.use(
 // 응답 인터셉터 (에러 처리)
 api.interceptors.response.use(
   (response) => {
-    console.log(`[API Response] ${response.config.url}`, response.data)
     return response
   },
   (error) => {
-    console.error('[API Response Error]', error.response?.data || error.message)
     return Promise.reject(error)
   }
 )

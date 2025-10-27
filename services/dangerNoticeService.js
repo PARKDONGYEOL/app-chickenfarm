@@ -66,11 +66,10 @@ const MOCK_NOTICES = [
 export const getDangerNotices = async (farmNum) => {
   // 목업 데이터 모드
   if (USE_MOCK_DATA) {
-    console.log('[MOCK MODE] Returning mock danger notices')
     return new Promise((resolve) => {
       setTimeout(() => {
         resolve(MOCK_NOTICES.filter((notice) => notice.farmNum === farmNum))
-      }, 500) // 네트워크 지연 시뮬레이션
+      }, 500)
     })
   }
 
@@ -84,7 +83,6 @@ export const getDangerNotices = async (farmNum) => {
       throw new Error('Failed to fetch danger notices')
     }
   } catch (error) {
-    console.error('Error fetching danger notices:', error)
     throw error
   }
 }
@@ -98,7 +96,6 @@ export const getDangerNotices = async (farmNum) => {
 export const getDangerNoticesByPeriod = async (farmNum, period) => {
   // 목업 데이터 모드
   if (USE_MOCK_DATA) {
-    console.log(`[MOCK MODE] Returning mock danger notices for period: ${period}`)
     return new Promise((resolve) => {
       setTimeout(() => {
         const now = new Date()
@@ -131,19 +128,14 @@ export const getDangerNoticesByPeriod = async (farmNum, period) => {
 
   // 실제 API 호출
   try {
-    // period가 'all'인 경우 파라미터 없이 호출
+    // 전체는 getDangerNotices API, 기간별은 getDangerNoticesByPeriod API 사용
     const url = period === 'all'
       ? `/danger/list/${farmNum}`
       : `/danger/${farmNum}/period?period=${period}`
 
-    console.log(`[getDangerNoticesByPeriod] ====== REQUEST ======`)
-    console.log(`[getDangerNoticesByPeriod] farmNum: ${farmNum}, period: "${period}"`)
-    console.log(`[getDangerNoticesByPeriod] Calling API: ${url}`)
     const response = await api.get(url)
-    console.log(`[getDangerNoticesByPeriod] ====== RESPONSE ======`)
-    console.log(`[getDangerNoticesByPeriod] Response data count:`, response.data.length || response.data.data?.length)
 
-    // period가 'all'일 때는 기존 API 응답 형식, 아니면 새로운 API 응답 형식
+    // period가 'all'일 때는 success 래핑, 나머지는 직접 배열
     if (period === 'all') {
       if (response.data.success) {
         return response.data.data
@@ -151,16 +143,9 @@ export const getDangerNoticesByPeriod = async (farmNum, period) => {
         throw new Error('Failed to fetch danger notices')
       }
     } else {
-      // 새로운 API는 직접 배열을 반환
-      console.log(`[getDangerNoticesByPeriod] Returning ${response.data.length} notices`)
-      if (response.data.length > 0) {
-        console.log(`[getDangerNoticesByPeriod] First notice date:`, response.data[0].recTime)
-        console.log(`[getDangerNoticesByPeriod] Last notice date:`, response.data[response.data.length - 1].recTime)
-      }
       return response.data
     }
   } catch (error) {
-    console.error('Error fetching danger notices by period:', error)
     throw error
   }
 }
@@ -176,7 +161,6 @@ export const getDangerNoticesByPeriod = async (farmNum, period) => {
 export const insertDangerNotice = async (noticeData) => {
   // 목업 데이터 모드
   if (USE_MOCK_DATA) {
-    console.log('[MOCK MODE] Insert danger notice:', noticeData)
     return new Promise((resolve) => {
       setTimeout(() => {
         resolve(true)
@@ -194,7 +178,6 @@ export const insertDangerNotice = async (noticeData) => {
       throw new Error('Failed to insert danger notice')
     }
   } catch (error) {
-    console.error('Error inserting danger notice:', error)
     throw error
   }
 }
@@ -207,7 +190,6 @@ export const insertDangerNotice = async (noticeData) => {
 export const deleteDangerNotices = async (noticeNums) => {
   // 목업 데이터 모드
   if (USE_MOCK_DATA) {
-    console.log('[MOCK MODE] Delete danger notices:', noticeNums)
     return new Promise((resolve) => {
       setTimeout(() => {
         resolve(true)
@@ -219,7 +201,7 @@ export const deleteDangerNotices = async (noticeNums) => {
   try {
     const nums = Array.isArray(noticeNums) ? noticeNums : [noticeNums]
 
-    // 각 알림을 개별적으로 삭제 (백엔드에 배치 삭제 API가 있다면 수정 필요)
+    // 각 알림을 개별적으로 삭제
     const deletePromises = nums.map(num =>
       api.delete(`/danger/delete/${num}`)
     )
@@ -227,7 +209,6 @@ export const deleteDangerNotices = async (noticeNums) => {
     await Promise.all(deletePromises)
     return true
   } catch (error) {
-    console.error('Error deleting danger notices:', error)
     throw error
   }
 }
@@ -330,7 +311,6 @@ export const getAlertsForFarm = async (farmNum) => {
     const notices = await getDangerNotices(farmNum)
     return notices.map(transformNoticeToAlert)
   } catch (error) {
-    console.error('Error getting alerts for farm:', error)
     return []
   }
 }
@@ -346,7 +326,6 @@ export const getAlertsByPeriod = async (farmNum, period) => {
     const notices = await getDangerNoticesByPeriod(farmNum, period)
     return notices.map(transformNoticeToAlert)
   } catch (error) {
-    console.error('Error getting alerts by period:', error)
     return []
   }
 }
