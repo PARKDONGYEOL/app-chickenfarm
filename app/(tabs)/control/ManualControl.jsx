@@ -2,7 +2,6 @@ import axios from 'axios';
 import { useRouter } from 'expo-router';
 import { useCallback, useEffect, useState } from 'react';
 import { Alert, RefreshControl, ScrollView, StyleSheet, Switch, Text, TouchableOpacity, View } from 'react-native';
-import Button from '../../../components/Button';
 
 
 const ManualControl = () => {
@@ -335,11 +334,14 @@ const ManualControl = () => {
         )}
       </View>
 
-      <Button 
-        title='자동 제어 설정' 
-        onPress={() => router.push('/control/AutoControl')}
+
+       <TouchableOpacity
         style={styles.settingsButton}
-      />
+        onPress={() => router.push('/control/AutoControl')}
+        >
+        <Text>자동 제어 설정</Text>
+      </TouchableOpacity>
+   
     </ScrollView>
   )
 }
@@ -440,7 +442,12 @@ const styles = StyleSheet.create({
     fontWeight: '600'
   },
   settingsButton: {
-    marginTop: 10,
-    marginBottom: 30
+    backgroundColor: '#dddddd',
+    padding: 16,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#ddd',
+    marginBottom : 30,
+    alignItems : 'center'
   }
 })
