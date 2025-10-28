@@ -15,7 +15,9 @@ const signin = () => {
 
   const loginBtn = async () => {
     try {
-      const response = await axios.post("http://192.168.30.152:8080/api/member", loginInfo)
+      const response = await axios.get("http://192.168.30.152:8080/api/member", {
+        params: loginInfo
+      })
       console.log('✅ 로그인 성공:', response.data)
 
       await SecureStore.setItemAsync("loginInfo", JSON.stringify(response.data))

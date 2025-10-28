@@ -1,22 +1,21 @@
 import { Ionicons } from '@expo/vector-icons'
+import AsyncStorage from '@react-native-async-storage/async-storage'
+import { Video } from 'expo-av'
 import { useRouter } from 'expo-router'
 import { useEffect, useMemo, useRef, useState } from 'react'
 import {
   Alert,
+  Linking,
   RefreshControl,
   ScrollView,
   StyleSheet,
   Text,
   TouchableOpacity,
   View,
-  Linking,
 } from 'react-native'
-import { SafeAreaView } from 'react-native-safe-area-context'
 import { WebView } from 'react-native-webview'
-import { Video } from 'expo-av'
-import AsyncStorage from '@react-native-async-storage/async-storage'
-import { connectAlarmStream, deleteAlarm, getAlarmHistory, getDangerousObjects, getVideos, deleteVideo, getVideoDownloadUrl, startRecording, stopRecording, getRecordingStatus } from '../../../services/coralApi'
-import recordingTimer from '../../../services/recordingTimer'
+import { connectAlarmStream, deleteAlarm, deleteVideo, getAlarmHistory, getDangerousObjects, getRecordingStatus, getVideoDownloadUrl, getVideos, startRecording, stopRecording } from '../../../../services/coralApi'
+import recordingTimer from '../../../../services/recordingTimer'
 
 const CCTVScreen = () => {
   const router = useRouter()
@@ -39,17 +38,16 @@ const CCTVScreen = () => {
   const tabs = ['실시간', '재생', '알람']
 
   return (
-    <SafeAreaView style={styles.safeArea} edges={['top']}>
-      <View style={styles.container}>
-        <View style={styles.header}>
-          <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
-            <Ionicons name="arrow-back" size={24} color="#212121" />
-          </TouchableOpacity>
-          <Text style={styles.headerTitle}>CCTV 모니터링</Text>
-          <TouchableOpacity style={styles.refreshButton} onPress={onRefresh}>
-            <Ionicons name="refresh" size={24} color="#212121" />
-          </TouchableOpacity>
-        </View>
+    <View style={styles.container}>
+      <View style={styles.header}>
+        <TouchableOpacity style={styles.backButton} onPress={() => router.back()}>
+          <Ionicons name="arrow-back" size={24} color="#212121" />
+        </TouchableOpacity>
+        <Text style={styles.headerTitle}>CCTV 모니터링</Text>
+        <TouchableOpacity style={styles.refreshButton} onPress={onRefresh}>
+          <Ionicons name="refresh" size={24} color="#212121" />
+        </TouchableOpacity>
+      </View>
 
         <View style={styles.tabContainer}>
           <ScrollView
@@ -92,8 +90,7 @@ const CCTVScreen = () => {
 
           {activeTab === '알람' && <AlarmHistoryView />}
         </ScrollView>
-      </View>
-    </SafeAreaView>
+    </View>
   )
 }
 
@@ -725,7 +722,7 @@ const RealtimeView = () => {
       },
       // 에러 콜백
       (error) => {
-        console.error('[REALTIME ALARM] ❌ SSE 오류:', error.message)
+        // 조용히 처리
       },
       // 네트워크 상태 콜백
       (isHealthy) => {
@@ -890,7 +887,7 @@ const RealtimeView = () => {
                         };
 
                         img.onerror = function(e) {
-                          console.error('[MJPEG] Stream error:', e);
+                          // 조용히 처리
                           retryCount++;
                           if (retryCount < maxRetries) {
                             updateStatus('연결 실패. 재시도 중... (' + retryCount + '/' + maxRetries + ')', 'error');
@@ -950,8 +947,7 @@ const RealtimeView = () => {
               console.log('[WebView Message]', event.nativeEvent.data)
             }}
             onError={(syntheticEvent) => {
-              const { nativeEvent } = syntheticEvent
-              console.error('[WebView Error]', nativeEvent)
+              // 조용히 처리
             }}
             onLoad={() => {
               console.log('[WebView] Loaded successfully')
@@ -963,8 +959,7 @@ const RealtimeView = () => {
               console.log('[WebView] Load ended')
             }}
             onHttpError={(syntheticEvent) => {
-              const { nativeEvent } = syntheticEvent
-              console.error('[WebView HTTP Error]', nativeEvent.statusCode, nativeEvent.url)
+              // 조용히 처리
             }}
             onShouldStartLoadWithRequest={(request) => {
               console.log('[WebView] Loading request:', request.url)
@@ -1592,7 +1587,7 @@ const AlarmHistoryView = () => {
 
             // 원하는 경우 연속 에러가 일정 수를 넘으면 종료(또는 다른 처리)
             if (errorCount >= ERROR_THRESHOLD) {
-              console.error(`[ALARM HISTORY] 🔴 Network errors ${errorCount} times — aborting verification.`)
+              // 조용히 처리
               // 네트워크 불안 상태로 간주하고 빈 배열로 확정하거나 기존 alarmsData 유지
               verifiedAlarms = [] // 또는: verifiedAlarms = alarmsData
               break
@@ -1826,13 +1821,15 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#F5F5F5',
+    paddingTop: 0,
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingTop: 50,
+    paddingBottom: 12,
     backgroundColor: '#FFFFFF',
     borderBottomWidth: 1,
     borderBottomColor: '#E0E0E0',
@@ -1841,9 +1838,10 @@ const styles = StyleSheet.create({
     padding: 4,
   },
   headerTitle: {
-    fontSize: 20,
-    fontWeight: '600',
+    fontSize: 18,
+    fontWeight: '700',
     color: '#212121',
+    fontFamily: 'System',
   },
   refreshButton: {
     padding: 4,
