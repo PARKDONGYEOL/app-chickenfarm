@@ -2,11 +2,12 @@ import { StyleSheet, Text, TouchableOpacity } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 
 const Button = ({
-  title,
+  title='버튼',
   onPress,
   icon,
   variant = 'primary',
-  disabled = false
+  disabled = false,
+  ...props
 }) => {
   return (
     <TouchableOpacity
@@ -18,6 +19,7 @@ const Button = ({
       onPress={onPress}
       disabled={disabled}
       activeOpacity={0.7}
+      {...props}
     >
       {icon && (
         <Ionicons
@@ -50,6 +52,20 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.1,
     shadowRadius: 3,
     elevation: 3,
+    borderWidth : 1
+  },
+  button: {
+    backgroundColor: '#22c55e',
+    paddingVertical: 14,
+    paddingHorizontal: 24,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    elevation: 5,
   },
   primary: {
     backgroundColor: '#2196F3',
@@ -70,6 +86,6 @@ const styles = StyleSheet.create({
   text: {
     color: '#FFFFFF',
     fontSize: 16,
-    fontWeight: '600',
-  },
+    fontWeight: '600'
+  }
 });
