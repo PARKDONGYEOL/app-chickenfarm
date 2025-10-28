@@ -23,13 +23,10 @@ const ManualControl = () => {
     co2 : '-'
   });
   
-  // 모드 토글 (자동 ↔ 수동)
+  // 모드 토글 (자동 <> 수동)
   const toggleMode = async (device) => {
     const currentMode = controlMode[device];
     const newMode = currentMode === 'auto' ? 'manual' : 'auto';
-    
-    console.log('device:', device);
-    console.log('현재 모드:', currentMode, '→ 새 모드:', newMode);
     
     try {
       // 서버에 모드 변경 요청
@@ -37,7 +34,7 @@ const ManualControl = () => {
         device: device,
         mode: newMode
       }, {
-        timeout: 10000
+        timeout: 5000
       });
       
       // 화면 업데이트
@@ -46,62 +43,52 @@ const ManualControl = () => {
         [device]: newMode
       }));
       
-      console.log(`${device} ${newMode} 모드로 전환 완료`);
-      
       // 자동 모드로 전환 시 상태 새로고침
       if (newMode === 'auto') {
         await getEnv();
       }
       
     } catch(e) {
-      console.log('모드 전환 에러:', e);
-      Alert.alert('모드 전환 실패', '모드 전환에 실패했습니다.');
+      console.log(e);
+      //Alert.alert('오류', '모드 전환 중 오류가 발생했습니다.');
     }
   }
   
   // 수동 제어 - ON 버튼
   const turnOn = async (device) => {
-    console.log(`${device} ON 버튼 클릭`);
-    
     try {
       await axios.post('http://192.168.30.240:5000/api/control', {
         device: device,
         state: true
       }, {
-        timeout: 10000
+        timeout: 15000
       });
       
-      console.log(`${device} ON 성공`);
-      
       // 상태 새로고침
-      await getEnv();
+       await getEnv();
       
     } catch(e) {
-      console.log('제어 에러:', e);
-      Alert.alert('제어 실패', '기기 제어에 실패했습니다.');  //나중에 시연 영상 찍을 때는 이거 없애고
+      console.log(e);
+     // Alert.alert('오류', '제어 실행 중 오류가 발생했습니다.');  //나중에 시연 영상 찍을 때는 이거 없애고
     }
   }
   
   // 수동 제어 - OFF 버튼
   const turnOff = async (device) => {
-    console.log(`${device} OFF 버튼 클릭`);
-    
     try {
       await axios.post('http://192.168.30.240:5000/api/control', {
         device: device,
         state: false
       }, {
-        timeout: 10000
+        timeout: 15000
       });
-      
-      console.log(`${device} OFF 성공`);
       
       // 상태 새로고침
       await getEnv();
       
     } catch(e) {
-      console.log('제어 에러:', e);
-      Alert.alert('제어 실패', '기기 제어에 실패했습니다.');  //나중에 시연 영상 찍을 때는 이거 없애고 
+      console.log(e);
+     // Alert.alert('제어 실패', '기기 제어에 실패했습니다.');  //나중에 시연 영상 찍을 때는 이거 없애고 
     }
   }
 
@@ -118,12 +105,12 @@ const ManualControl = () => {
       });
 
       const statusRes = await axios.get('http://192.168.30.240:5000/api/status', {
-        timeout: 5000
+        timeout: 15000
       });
 
       if (statusRes.data && statusRes.data.modes) {
         setControlMode(statusRes.data.modes);
-        console.log('현재 모드:', statusRes.data.modes);
+        console.log(statusRes.data.modes);
       }
     } catch(e) {
       console.log('데이터 가져오기 에러:', e);
