@@ -415,6 +415,18 @@ const styles = StyleSheet.create({
     padding: 15,
     margin: 15,
     alignItems: 'center',
+    backgroundColor: '#F5F5F5',
+    padding: 20,
+  },
+  title: {
+    fontSize: 28,
+    fontWeight: 'bold',
+    color: '#212121',
+    marginBottom: 8,
+  },
+  subtitle: {
+    fontSize: 16,
+    color: '#757575',
   },
   errorText: {
     color: '#dc2626',

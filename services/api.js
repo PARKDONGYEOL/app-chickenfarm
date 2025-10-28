@@ -15,6 +15,7 @@ export const USE_MOCK_DATA = false  // ✅ 백엔드 서버 연결됨!
 // Android 에뮬레이터에서 테스트 시
 // const BASE_URL = 'http://10.0.2.2:8080'
 
+
 // iOS 시뮬레이터 또는 Expo Go에서 테스트 시
 // const BASE_URL = 'http://localhost:8080'
 
@@ -30,6 +31,7 @@ const api = axios.create({
     'Content-Type': 'application/json',
   },
 })
+
 
 // 요청 인터셉터 (로깅, 인증 토큰 추가 등)
 api.interceptors.request.use(
