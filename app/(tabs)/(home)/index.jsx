@@ -1,11 +1,13 @@
 import axios from 'axios'
 import { Image } from 'expo-image'
+import { useRouter } from 'expo-router'
 import { useEffect, useState } from 'react'
 import { ScrollView, StyleSheet, Text, View } from 'react-native'
 import { CircularProgress } from 'react-native-circular-progress'
-import * as SecureStore from "expo-secure-store"
 
 const HomeScreen = () => {
+  // router
+  const router = useRouter()
   // 날씨 정보 api 키
   const api_key = "b1be2831111b47865f86a3c4b3798c3c"
 
@@ -14,15 +16,13 @@ const HomeScreen = () => {
 
   // 실시간 환경 정보
   const [realtime, setRealtime] = useState(null)
+  
+  // 통신 오류 상태
+  const [connectionError, setConnectionError] = useState(false)
 
   // 날씨 데이터 가져오기
   useEffect(() => {
     const getWeather = async () => {
-      // 로그인 데이터 저장
-      const getloginInfo = ()=>{
-        
-      }
-
       // 날씨 정보
       const response = await axios.get('https://api.openweathermap.org/data/2.5/weather', {
         params: {
@@ -44,9 +44,11 @@ const HomeScreen = () => {
 
         if (response.data.success) {
           setRealtime(response.data.data)
+          setConnectionError(false) // 통신 성공
         }
       } catch (error) {
-        // 에러 무시 (데이터는 정상적으로 받아와지고 있음)
+        // 에러는 UI로만 표시 (콘솔 로그 제거)
+        setConnectionError(true) // 통신 실패
       }
     }
 
@@ -181,6 +183,14 @@ const HomeScreen = () => {
         </View>
         <Text style={styles.description}>{weather?.weather?.[0]?.description}</Text>
       </View>
+
+      {/* 통신 오류 메시지 */}
+      {connectionError && (
+        <View style={styles.errorContainer}>
+          <Text style={styles.errorText}>⚠️ 실시간 데이터 통신 오류</Text>
+          <Text style={styles.errorSubText}>서버 연결을 확인해주세요</Text>
+        </View>
+      )}
 
       {/* 환경 데이터 박스들 */}
       <View style={styles.dataRow}>
@@ -396,6 +406,25 @@ const styles = StyleSheet.create({
   },
   elseContainer: {
     marginLeft: 10
+  },
+  errorContainer: {
+    backgroundColor: '#fee2e2',
+    borderWidth: 1,
+    borderColor: '#ef4444',
+    borderRadius: 10,
+    padding: 15,
+    margin: 15,
+    alignItems: 'center',
+  },
+  errorText: {
+    color: '#dc2626',
+    fontSize: 16,
+    fontWeight: '600',
+    marginBottom: 5,
+  },
+  errorSubText: {
+    color: '#991b1b',
+    fontSize: 14,
   },
   dataRow: {
     flexDirection: 'row',

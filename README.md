@@ -1,50 +1,95 @@
-# Welcome to your Expo app 👋
+# 🐔 Chicken Farm App
 
-This is an [Expo](https://expo.dev) project created with [`create-expo-app`](https://www.npmjs.com/package/create-expo-app).
+양계장 관리를 위한 React Native 모바일 애플리케이션입니다.
 
-## Get started
+## 📱 주요 기능
 
-1. Install dependencies
+- 회원가입 및 로그인
+- 양계장 데이터 관리
+- 실시간 모니터링
+- 차트 및 통계 시각화
+
+## 🎬 기능 작동 영상
+
+<!-- 여기에 영상을 추가하세요 -->
+
+### 회원가입 및 로그인
+![회원가입 영상](./docs/videos/signup-demo.gif)
+
+### 대시보드
+![대시보드 영상](./docs/videos/dashboard-demo.gif)
+
+### 데이터 관리
+![데이터 관리 영상](./docs/videos/data-management-demo.gif)
+
+## 🚀 시작하기
+
+### 필수 요구사항
+
+- Node.js
+- npm 또는 yarn
+- Expo CLI
+- Android Studio (Android 개발) 또는 Xcode (iOS 개발)
+
+### 설치 및 실행
+
+1. 의존성 설치
 
    ```bash
    npm install
    ```
 
-2. Start the app
+2. 개발 서버 시작
 
    ```bash
-   npx expo start
+   npm start
    ```
 
-In the output, you'll find options to open the app in a
+3. 플랫폼별 실행
 
-- [development build](https://docs.expo.dev/develop/development-builds/introduction/)
-- [Android emulator](https://docs.expo.dev/workflow/android-studio-emulator/)
-- [iOS simulator](https://docs.expo.dev/workflow/ios-simulator/)
-- [Expo Go](https://expo.dev/go), a limited sandbox for trying out app development with Expo
+   ```bash
+   # Android
+   npm run android
 
-You can start developing by editing the files inside the **app** directory. This project uses [file-based routing](https://docs.expo.dev/router/introduction).
+   # iOS
+   npm run ios
 
-## Get a fresh project
+   # Web
+   npm run web
+   ```
 
-When you're ready, run:
+## 🛠 기술 스택
 
-```bash
-npm run reset-project
+- React Native 0.81.4
+- Expo ~54.0.13
+- React Navigation 7.x
+- Axios (API 통신)
+- React Native SVG (차트)
+- Expo Router (파일 기반 라우팅)
+
+## 📁 프로젝트 구조
+
+```
+app-chickenfarm/
+├── app/                    # 앱 화면 및 라우팅
+│   ├── authorization/      # 인증 관련 화면
+│   └── ...
+├── components/             # 재사용 가능한 컴포넌트
+├── assets/                 # 이미지, 폰트 등
+└── docs/                   # 문서 및 영상
+    └── videos/             # 기능 시연 영상
 ```
 
-This command will move the starter code to the **app-example** directory and create a blank **app** directory where you can start developing.
+## 🔧 개발 스크립트
 
-## Learn more
+```bash
+npm start          # Expo 개발 서버 시작
+npm run android    # Android 앱 실행
+npm run ios        # iOS 앱 실행
+npm run web        # 웹 버전 실행
+npm run lint       # 코드 린팅
+```
 
-To learn more about developing your project with Expo, look at the following resources:
+## 📝 라이선스
 
-- [Expo documentation](https://docs.expo.dev/): Learn fundamentals, or go into advanced topics with our [guides](https://docs.expo.dev/guides).
-- [Learn Expo tutorial](https://docs.expo.dev/tutorial/introduction/): Follow a step-by-step tutorial where you'll create a project that runs on Android, iOS, and the web.
-
-## Join the community
-
-Join our community of developers creating universal apps.
-
-- [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
-- [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+Private
