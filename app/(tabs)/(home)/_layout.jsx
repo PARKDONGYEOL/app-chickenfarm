@@ -9,6 +9,12 @@ const HomeLayout = () => {
           headerShown: false,
         }}
       />
+      <Stack.Screen
+        name="management/cctv"
+        options={{
+          headerShown: false,
+        }}
+      />
     </Stack>
   )
 }

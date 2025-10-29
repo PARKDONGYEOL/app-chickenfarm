@@ -1,8 +1,9 @@
 import axios from 'axios'
 import { Image } from 'expo-image'
 import { useRouter } from 'expo-router'
+import * as SecureStore from 'expo-secure-store'
 import { useEffect, useState } from 'react'
-import { ScrollView, StyleSheet, Text, View } from 'react-native'
+import { ScrollView, StyleSheet, Text, TouchableOpacity, View } from 'react-native'
 import { CircularProgress } from 'react-native-circular-progress'
 
 const HomeScreen = () => {
@@ -159,8 +160,20 @@ const HomeScreen = () => {
     return { grade: '매우나쁨', color: '#991b1b', emoji: '😰' }
   }
 
+  const handleLogout = async () => {
+    await SecureStore.deleteItemAsync("loginInfo")
+    router.replace("/authorization/signin")
+  }
+
   return (
-    <ScrollView style={styles.container}>
+    <View style={styles.wrapper}>
+      <View style={styles.header}>
+        <Text style={styles.headerTitle}>환경정보</Text>
+        <TouchableOpacity onPress={handleLogout}>
+          <Text style={styles.logoutText}>로그아웃</Text>
+        </TouchableOpacity>
+      </View>
+      <ScrollView style={styles.container}>
       <View
         style={[
           styles.weatherContainer,
@@ -368,12 +381,38 @@ const HomeScreen = () => {
         </View>
       </View>
     </ScrollView>
+    </View>
   )
 }
 
 export default HomeScreen
 
 const styles = StyleSheet.create({
+  wrapper: {
+    flex: 1,
+    backgroundColor: '#fff',
+  },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingTop: 50,
+    paddingBottom: 12,
+    backgroundColor: '#FFFFFF',
+    borderBottomWidth: 1,
+    borderBottomColor: '#E0E0E0',
+  },
+  headerTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#212121',
+    fontFamily: 'System',
+  },
+  logoutText: {
+    color: '#007AFF',
+    fontSize: 16,
+  },
   container: {
     flex: 1,
   },

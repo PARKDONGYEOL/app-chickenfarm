@@ -28,7 +28,21 @@ coralApi.interceptors.response.use(
     return response
   },
   (error) => {
-    // 조용히 처리
+    const isAlarmEndpoint = error.config?.url?.includes('/alarms')
+    const isDangerousObjectsEndpoint = error.config?.url?.includes('/dangerous_objects')
+    const isRecordEndpoint = error.config?.url?.includes('/record')
+    const isVideoDeleteEndpoint = error.config?.url?.includes('/videos/delete')
+    const isVideosDbEndpoint = error.config?.url?.includes('/videos_db')
+    const isAlarmDbEndpoint = error.config?.url?.includes('/alarms_db')
+    const isSilentEndpoint = isAlarmEndpoint || isDangerousObjectsEndpoint || isRecordEndpoint || isVideoDeleteEndpoint || isVideosDbEndpoint || isAlarmDbEndpoint
+
+    if (error.response) {
+      // 조용히 처리
+    } else if (error.request) {
+      // 조용히 처리
+    } else {
+      // 조용히 처리
+    }
     return Promise.reject(error)
   }
 )
@@ -73,6 +87,8 @@ export const connectAlarmStream = (onAlarm, onError, onNetworkStatus) => {
   let pollCount = 0
   let consecutiveErrors = 0
   let isNetworkHealthy = true
+
+  // 폴링 시작 (로그 제거)
 
   const poll = async () => {
     if (!isActive) return
@@ -193,14 +209,20 @@ export const getDangerousObjects = async () => {
  * @param {number} alarmId - 삭제할 알람 ID
  */
 export const deleteAlarm = async (alarmId) => {
+  console.log('[API] 🗑️ Attempting to delete alarm ID:', alarmId)
   const url = `${CORAL_BASE_URL}/alarms/${alarmId}`
+  console.log('[API] DELETE URL:', url)
 
   try {
     const response = await axios.delete(url, {
       params: { _t: Date.now() }
     })
+    console.log('[API] ✅ Alarm deleted successfully:', alarmId)
+    console.log('[API] Response status:', response.status)
+    console.log('[API] Response data:', response.data)
     return response.data
   } catch (error) {
+    console.log('[API] ⚠️ Failed to delete alarm (silent):', alarmId, error.message)
     throw error
   }
 }
@@ -241,13 +263,17 @@ export const getVideos = async () => {
  * @param {string} fileName - 삭제할 파일명
  */
 export const deleteVideo = async (fileName) => {
+  console.log('[API] 🗑️ Attempting to delete video:', fileName)
+
   try {
     const response = await coralApi.post(`/videos/delete/${fileName}`, {}, {
       params: { _t: Date.now() },
       timeout: 15000
     })
+    console.log('[API] ✅ Video deleted successfully:', fileName)
     return response.data
   } catch (error) {
+    console.log('[API] ⚠️ Failed to delete video (silent):', fileName, error.message)
     throw error
   }
 }
@@ -256,13 +282,17 @@ export const deleteVideo = async (fileName) => {
  * 삭제된 영상 DB 정리 (IS_READABLE=0인 항목 제거)
  */
 export const cleanupDeletedVideos = async () => {
+  console.log('[API] 🧹 Attempting to cleanup deleted videos from DB')
+
   try {
     const response = await coralApi.post('/videos/cleanup_deleted', {}, {
       params: { _t: Date.now() },
       timeout: 15000
     })
+    console.log('[API] ✅ DB cleanup completed:', response.data)
     return response.data
   } catch (error) {
+    console.log('[API] ⚠️ Failed to cleanup DB (silent):', error.message)
     throw error
   }
 }
@@ -283,13 +313,17 @@ export const getVideoDownloadUrl = (fileName) => {
  * 녹화 시작
  */
 export const startRecording = async () => {
+  console.log('[API] 🎥 Starting recording...')
+
   try {
     const response = await coralApi.get('/record/start', {
       params: { _t: Date.now() },
       timeout: 10000
     })
+    console.log('[API] ✅ Recording started:', response.data)
     return response.data
   } catch (error) {
+    console.log('[API] ⚠️ Failed to start recording:', error.message)
     throw error
   }
 }
@@ -298,13 +332,17 @@ export const startRecording = async () => {
  * 녹화 중지
  */
 export const stopRecording = async () => {
+  console.log('[API] ⏹️ Stopping recording...')
+
   try {
     const response = await coralApi.get('/record/stop', {
       params: { _t: Date.now() },
       timeout: 10000
     })
+    console.log('[API] ✅ Recording stopped:', response.data)
     return response.data
   } catch (error) {
+    console.log('[API] ⚠️ Failed to stop recording:', error.message)
     throw error
   }
 }
@@ -320,15 +358,34 @@ export const getRecordingStatus = async () => {
       timeout: 5000
     })
 
+    // 응답 검증
     if (response && response.data) {
+      // 기본값 설정
       return {
         is_recording: response.data.is_recording ?? false,
         current_file: response.data.current_file ?? null
       }
     }
 
+    // 응답이 없으면 기본값 반환
     return { is_recording: false, current_file: null }
   } catch (error) {
+    // 에러를 조용히 처리 (콘솔 로그만)
+    if (error.code === 'ECONNABORTED') {
+      // 타임아웃 에러
+      console.log('[API] Recording status timeout (silent)')
+    } else if (error.response) {
+      // 서버 응답 에러 (4xx, 5xx)
+      console.log('[API] Recording status error:', error.response.status, '(silent)')
+    } else if (error.request) {
+      // 네트워크 에러
+      console.log('[API] Recording status network error (silent)')
+    } else {
+      // 기타 에러
+      console.log('[API] Recording status error (silent):', error.message)
+    }
+
+    // 항상 기본값 반환
     return { is_recording: false, current_file: null }
   }
 }

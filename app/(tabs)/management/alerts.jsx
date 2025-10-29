@@ -1,18 +1,17 @@
-import { useState, useEffect } from 'react'
-import {
-  StyleSheet,
-  Text,
-  View,
-  ScrollView,
-  TouchableOpacity,
-  RefreshControl,
-  ActivityIndicator,
-} from 'react-native'
-import { SafeAreaView } from 'react-native-safe-area-context'
 import { Ionicons } from '@expo/vector-icons'
 import { useRouter } from 'expo-router'
+import { useEffect, useState } from 'react'
+import {
+    ActivityIndicator,
+    RefreshControl,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TouchableOpacity,
+    View
+} from 'react-native'
 import AlertCard from '../../../components/management/AlertCard'
-import { getAlertsByPeriod, deleteDangerNotices } from '../../../services/dangerNoticeService'
+import { deleteDangerNotices, getAlertsByPeriod } from '../../../services/dangerNoticeService'
 
 const AlertsScreen = () => {
   const router = useRouter()
@@ -147,10 +146,9 @@ const AlertsScreen = () => {
   const sensorTypes = ['전체', '온도', '습도', '조도', '암모니아', '이산화탄소', '일산화탄소', '이산화질소']
 
   return (
-    <SafeAreaView style={styles.safeArea} edges={['top']}>
-      <View style={styles.container}>
-        {/* Header */}
-        <View style={styles.header}>
+    <View style={styles.container}>
+      {/* Header */}
+      <View style={styles.header}>
           {selectionMode ? (
             <>
               <TouchableOpacity style={styles.backButton} onPress={handleCancelSelection}>
@@ -298,8 +296,7 @@ const AlertsScreen = () => {
             ))
           )}
         </ScrollView>
-      </View>
-    </SafeAreaView>
+    </View>
   )
 }
 
@@ -313,13 +310,15 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#F5F5F5',
+    paddingTop: 0,
   },
   header: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 16,
-    paddingVertical: 12,
+    paddingTop: 50,
+    paddingBottom: 12,
     backgroundColor: '#FFFFFF',
     borderBottomWidth: 1,
     borderBottomColor: '#E0E0E0',
@@ -328,9 +327,10 @@ const styles = StyleSheet.create({
     padding: 4,
   },
   headerTitle: {
-    fontSize: 20,
-    fontWeight: '600',
+    fontSize: 18,
+    fontWeight: '700',
     color: '#212121',
+    fontFamily: 'System',
   },
   refreshButton: {
     padding: 4,
