@@ -23,7 +23,7 @@ const signin = () => {
       await SecureStore.setItemAsync("loginInfo", JSON.stringify(response.data))
       router.replace("/(tabs)/(home)")
     } catch (error) {
-      console.error('로그인 실패:', error)
+      console.error('로그인 실패:', error) /* dsfd */
       alert('로그인에 실패했습니다.')
     }
   }
