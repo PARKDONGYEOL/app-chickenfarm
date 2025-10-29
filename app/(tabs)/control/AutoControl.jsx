@@ -1,9 +1,11 @@
 import axios from 'axios';
 import { useRouter } from 'expo-router';
 import { useState, useEffect } from 'react';
-import { Alert, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import { ActivityIndicator, Alert, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from 'react-native';
+import Octicons from '@expo/vector-icons/Octicons';
 
 const AutoControl = () => {
+  //기본 세팅값
   const DEFAULT_SETTINGS = {
     doorOpenTemp: 28,
     doorCloseTemp: 24,
@@ -13,14 +15,28 @@ const AutoControl = () => {
 
   const router = useRouter();
   
-  const [settings, setSettings] = useState({
-    doorOpenTemp: 28,
-    doorCloseTemp: 24,
-    fanHumidityThreshold: 70,
-    fanCO2Threshold: 1000
-  });
+  const [settings, setSettings] = useState(DEFAULT_SETTINGS);
 
+  //저장중 로딩 상태
   const [loading, setLoading] = useState(false);
+  //전체 로딩 화면(로딩중..)
+  const [isInitialLoading, setIsInitialLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
+
+  // 재시도 함수(1초 간격 10번 시도)
+  const retryRequest = async (whatToRetry, maxRetries = 10) => {
+    for (let i = 0; i < maxRetries; i++) {
+      try {
+        const result = await whatToRetry();
+        return { success: true, data: result };
+      } catch(e) {
+        if (i < maxRetries - 1) {
+          await new Promise(r => setTimeout(r, 1000));
+        }
+      }
+    }
+    return { success: false };
+  }
 
   // 설정 불러오기
   useEffect(() => {
@@ -28,53 +44,63 @@ const AutoControl = () => {
   }, []);
 
   const loadSettings = async () => {
-    try {
-      const res = await axios.get('http://192.168.30.240:5000/api/settings/simple', {
-        timeout: 15000
-      });
-      
-      const data = res.data.data
+    setIsInitialLoading(true);
+    setLoadError(false); //이전 에러 화면 초기화
+    
+    const result = await retryRequest(() =>
+      axios.get('http://192.168.30.240:5000/api/settings/simple', {
+        timeout: 5000
+      })
+    );
 
-      if (res.data.success && data) {
+    if (result.success) {
+      const data = result.data.data.data;
+      if (data) {
         setSettings(data);
+        setLoadError(false);
       }
-    } catch(e) {
-      console.log('설정 불러오기 실패:', e);
+    } else {
+      setLoadError(true);
     }
+    
+    setIsInitialLoading(false);
   };
 
   // 설정 저장
   const handleSave = async () => {
     setLoading(true);
     
-    try {
-      // 1. 설정 저장
-      const saveRes = await axios.post(
+    // 1. 설정 저장
+    const saveResult = await retryRequest(() =>
+      axios.post(
         'http://192.168.30.240:5000/api/settings/update',
         settings,
-        { timeout: 15000 }
-      );
-      
-      if (saveRes.data && saveRes.data.success) {
-        // 2. 라즈베리파이에 적용
-        await axios.post(
-          'http://192.168.30.240:5000/api/settings/apply',
-          {},
-          { timeout: 15000 }
-        );
-        
-        Alert.alert('저장 완료', '설정이 저장되었습니다.');
-      } else {
-       // Alert.alert('저장 실패', saveRes.data?.message || '설정 저장에 실패했습니다.');
-      }
-    } catch(e) {
-      console.log('설정 저장 실패:', e);
-      //실제로는 저장되는 거 맞는데 앱 느림 이슈로 오류 뜨길래 그냥 오류란에도 성공 메세지 띄워놓음
-      Alert.alert('저장 완료', '설정이 저장되었습니다.'); 
-     // Alert.alert('오류', '설정 저장 중 오류가 발생했습니다.');
-    } finally {
+        { timeout: 5000 }
+      )
+    );
+    
+    if (!saveResult.success) {
+      Alert.alert('오류', '설정 저장에 실패했습니다.');
       setLoading(false);
+      return;
     }
+    
+    // 2. 라즈베리파이에 적용
+    const applyResult = await retryRequest(() =>
+      axios.post(
+        'http://192.168.30.240:5000/api/settings/apply',
+        {}, //파이썬에서 최신 디비 읽어서 적용하기 때문에 값 보낼 필요 없음
+        { timeout: 5000 }
+      )
+    );
+    
+    if (applyResult.success) {
+      Alert.alert('저장 완료', '설정이 저장되었습니다.');
+    } else {
+      Alert.alert('경고', '설정은 저장되었으나 적용에 실패했습니다.');
+    }
+    
+    setLoading(false);
   };
 
   // 기본값으로 초기화
@@ -102,6 +128,47 @@ const AutoControl = () => {
     }));
   };
 
+  // 초기 로딩 화면
+  if (isInitialLoading) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#4CAF50" />
+        <Text style={styles.loadingText}>설정을 불러오는 중...</Text>
+      </View>
+    );
+  }
+
+  // 에러 화면
+  if (loadError) {
+    return (
+      <View style={styles.errorContainer}>
+        <Octicons name="alert-fill" size={40} color="#ffc219ff" />
+        <Text style={styles.errorTitle}>네트워크 오류</Text>
+        <Text style={styles.errorText}>
+          설정을 불러올 수 없습니다
+        </Text>
+        
+        <TouchableOpacity 
+          style={styles.retryButton}
+          onPress={loadSettings}
+        >
+          <Text style={styles.retryButtonText}>
+            다시 시도하기
+          </Text>
+        </TouchableOpacity>
+        
+        <TouchableOpacity 
+          style={styles.backButton}
+          onPress={() => router.back()}
+        >
+          <Text style={styles.backButtonText}>
+            ← 뒤로 가기
+          </Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
+
   return (
     <ScrollView style={styles.container}>
       <View style={styles.header}>
@@ -120,6 +187,7 @@ const AutoControl = () => {
             onChangeText={(text) => handleChange('doorOpenTemp', text)}
             keyboardType="numeric"
             placeholder="28"
+            editable={!loading}
           />
           <Text style={styles.description}>
             이 온도 이상일 때 문이 열립니다
@@ -134,6 +202,7 @@ const AutoControl = () => {
             onChangeText={(text) => handleChange('doorCloseTemp', text)}
             keyboardType="numeric"
             placeholder="24"
+            editable={!loading}
           />
           <Text style={styles.description}>
             이 온도 이하일 때 문이 닫힙니다
@@ -153,6 +222,7 @@ const AutoControl = () => {
             onChangeText={(text) => handleChange('fanHumidityThreshold', text)}
             keyboardType="numeric"
             placeholder="70"
+            editable={!loading}
           />
           <Text style={styles.description}>
             이 습도 이상일 때 팬이 가동됩니다
@@ -167,6 +237,7 @@ const AutoControl = () => {
             onChangeText={(text) => handleChange('fanCO2Threshold', text)}
             keyboardType="numeric"
             placeholder="1000"
+            editable={!loading}
           />
           <Text style={styles.description}>
             이 CO2 농도 초과 시 팬이 가동됩니다
@@ -182,9 +253,13 @@ const AutoControl = () => {
           onPress={handleSave}
           disabled={loading}
         >
-          <Text style={styles.saveButtonText}>
-            설정 저장 및 적용
-          </Text>
+          {loading ? (
+            <ActivityIndicator size="small" color="#fff" />
+          ) : (
+            <Text style={styles.saveButtonText}>
+              설정 저장 및 적용
+            </Text>
+          )}
         </TouchableOpacity>
         
         <TouchableOpacity
@@ -214,6 +289,69 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#f5f5f5'
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#f5f5f5'
+  },
+  loadingText: {
+    marginTop: 15,
+    fontSize: 16,
+    color: '#666'
+  },
+  errorContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#f5f5f5',
+    padding: 20
+  },
+  errorIcon: {
+    fontSize: 64,
+    marginBottom: 20
+  },
+  errorTitle: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#333',
+    marginBottom: 10
+  },
+  errorText: {
+    fontSize: 16,
+    color: '#666',
+    marginBottom: 30,
+    textAlign: 'center'
+  },
+  retryButton: {
+    backgroundColor: '#4CAF50',
+    paddingHorizontal: 30,
+    paddingVertical: 15,
+    borderRadius: 10,
+    marginBottom: 15,
+    minWidth: 200,
+    alignItems: 'center'
+  },
+  retryButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: 'bold'
+  },
+  backButton: {
+    backgroundColor: '#fff',
+    paddingHorizontal: 30,
+    paddingVertical: 15,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: '#ddd',
+    minWidth: 200,
+    alignItems: 'center'
+  },
+  backButtonText: {
+    color: '#666',
+    fontSize: 16,
+    fontWeight: '600'
   },
   header: {
     backgroundColor: '#fff',
@@ -276,7 +414,9 @@ const styles = StyleSheet.create({
   saveButton: {
     backgroundColor: '#4CAF50',
     borderRadius: 10,
-    padding : 15
+    padding : 15,
+    minWidth: 100,
+    alignItems: 'center'
   },
   saveButtonText: {
     color: '#fff',

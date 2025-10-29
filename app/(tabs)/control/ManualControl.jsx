@@ -1,7 +1,10 @@
 import axios from 'axios';
 import { useRouter } from 'expo-router';
-import { useCallback, useEffect, useState } from 'react';
-import { RefreshControl, ScrollView, StyleSheet, Switch, Text, TouchableOpacity, View } from 'react-native';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import { 
+  ActivityIndicator, Alert, RefreshControl, ScrollView, StyleSheet, Switch, Text, TouchableOpacity, View 
+} from 'react-native';
+import Octicons from '@expo/vector-icons/Octicons';
 
 
 const ManualControl = () => {
@@ -22,110 +25,198 @@ const ManualControl = () => {
     lux: '-',
     co2 : '-'
   });
-  
-  // 모드 토글 (자동 <> 수동)
-  const toggleMode = async (device) => {
-    const currentMode = controlMode[device];
-    const newMode = currentMode === 'auto' ? 'manual' : 'auto';
-    
-    try {
-      // 서버에 모드 변경 요청
-      await axios.post('http://192.168.30.240:5000/api/control', {
-        device: device,
-        mode: newMode
-      }, {
-        timeout: 5000
-      });
-      
-      // 화면 업데이트
-      setControlMode(prev => ({
-        ...prev,
-        [device]: newMode
-      }));
-      
-      // 자동 모드로 전환 시 상태 새로고침
-      if (newMode === 'auto') {
-        await getEnv();
-      }
-      
-    } catch(e) {
-      console.log(e);
-      //Alert.alert('오류', '모드 전환 중 오류가 발생했습니다.');
-    }
-  }
-  
-  // 수동 제어 - ON 버튼
-  const turnOn = async (device) => {
-    try {
-      await axios.post('http://192.168.30.240:5000/api/control', {
-        device: device,
-        state: true
-      }, {
-        timeout: 15000
-      });
-      
-      // 상태 새로고침
-       await getEnv();
-      
-    } catch(e) {
-      console.log(e);
-     // Alert.alert('오류', '제어 실행 중 오류가 발생했습니다.');  //나중에 시연 영상 찍을 때는 이거 없애고
-    }
-  }
-  
-  // 수동 제어 - OFF 버튼
-  const turnOff = async (device) => {
-    try {
-      await axios.post('http://192.168.30.240:5000/api/control', {
-        device: device,
-        state: false
-      }, {
-        timeout: 15000
-      });
-      
-      // 상태 새로고침
-      await getEnv();
-      
-    } catch(e) {
-      console.log(e);
-     // Alert.alert('제어 실패', '기기 제어에 실패했습니다.');  //나중에 시연 영상 찍을 때는 이거 없애고 
-    }
-  }
 
-  // 센서 데이터 및 상태 가져오기
-  const getEnv = async () => {
-    try {
-      const res = await axios.get('http://192.168.30.240:5000/api/realtime');
-      const data = res.data.data;
+  // 개별 로딩
+  const [isLoading, setIsLoading] = useState({
+    door: false,
+    humPen: false,
+    airPen: false,
+    led: false
+  });
+
+  const [isInitialLoading, setIsInitialLoading] = useState(true);
+  const [loadError, setLoadError] = useState(false);
+
+  // 진행 중인 요청 개수
+  const activeRequestsRef = useRef(0);
+
+  // 재시도 함수
+  const retryRequest = async (whatToRetry, maxRetries = 10) => {
+    for (let i = 0; i < maxRetries; i++) {
+      try {
+        const result = await whatToRetry();
+        return { success: true, data: result };
+      } catch(e) {
+        if (i < maxRetries - 1) {
+          await new Promise(r => setTimeout(r, 1000));
+        }
+      }
+    }
+    return { success: false };
+  }
+  
+  // 센서 데이터
+  const getSensorData = async () => {
+    const result = await retryRequest(() => 
+      axios.get('http://192.168.30.240:5000/api/realtime', {
+        timeout: 5000
+      })
+    );
+
+    if (result.success) {
+      const data = result.data.data.data;
       setSensorData({
         temperature: data.temperature,
         humidity: data.humidity,
         lux: data.lux,
         co2: data.co2
       });
+      return true;
+    }
+    return false;
+  }
+  
+  // 모드 상태
+  const getControlStatus = async () => {
+    const result = await retryRequest(() =>
+      axios.get('http://192.168.30.240:5000/api/status', {
+        timeout: 5000
+      })
+    );
 
-      const statusRes = await axios.get('http://192.168.30.240:5000/api/status', {
-        timeout: 15000
+    if (result.success && result.data.data.modes) {
+      setControlMode(result.data.data.modes);
+      return true;
+    }
+    return false;
+  }
+
+  // 초기 데이터 로드
+  const loadInitialData = async () => {
+    setIsInitialLoading(true);
+    setLoadError(false);
+    
+    const sensorSuccess = await getSensorData();
+    const statusSuccess = await getControlStatus();
+    
+    if (!sensorSuccess || !statusSuccess) {
+      setLoadError(true);
+    }
+    
+    setIsInitialLoading(false);
+  }
+  
+  // 모드 토글
+  const toggleMode = async (device) => {
+    // 이미 이 기기 처리 중이면 무시
+    if (isLoading[device]) {
+      return;
+    }
+
+    // 동시 요청 2개 이상이면 차단
+    if (activeRequestsRef.current >= 2) {
+      Alert.alert('알림', '잠시만 기다려주세요!');
+      return;
+    }
+    
+    const currentMode = controlMode[device];
+    const newMode = currentMode === 'auto' ? 'manual' : 'auto';
+    
+    // 로딩 시작
+    setIsLoading(prev => ({ ...prev, [device]: true }));
+    activeRequestsRef.current += 1;
+    
+    // 재시도하면서 요청
+    const result = await retryRequest(() =>
+      axios.post('http://192.168.30.240:5000/api/control', {
+        device: device,
+        mode: newMode
+      }, {
+        timeout: 5000
+      })
+    );
+
+    if (result.success) {
+      setControlMode(prev => ({
+        ...prev,
+        [device]: newMode
+      }));
+    } else {
+      Alert.alert('오류', '모드 전환에 실패했습니다.');
+    }
+    
+    // 로딩 끝
+    setIsLoading(prev => ({ ...prev, [device]: false }));
+    activeRequestsRef.current -= 1;
+  }
+  
+  // 수동 제어 - ON
+  const turnOn = async (device) => {
+    try {
+      await axios.post('http://192.168.30.240:5000/api/control', {
+        device: device,
+        state: true
+      }, {
+        timeout: 5000
       });
-
-      if (statusRes.data && statusRes.data.modes) {
-        setControlMode(statusRes.data.modes);
-        console.log(statusRes.data.modes);
-      }
     } catch(e) {
-      console.log('데이터 가져오기 에러:', e);
+      // 조용히 실패
+    }
+  }
+  
+  // 수동 제어 - OFF
+  const turnOff = async (device) => {
+    try {
+      await axios.post('http://192.168.30.240:5000/api/control', {
+        device: device,
+        state: false
+      }, {
+        timeout: 5000
+      });
+    } catch(e) {
+      // 조용히 실패
     }
   }
 
+  // 새로고침
   const onRefresh = useCallback(async () => {
     setRefreshing(true);
-    await getEnv();
+    await getSensorData();
     setRefreshing(false);
   }, [])
 
+  // 처음 진입
   useEffect(() => {
-    getEnv();
+    loadInitialData();
   }, [])
+
+  // 초기 로딩 화면
+  if (isInitialLoading) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" color="#4CAF50" />
+        <Text style={styles.loadingText}>데이터를 불러오는 중...</Text>
+      </View>
+    );
+  }
+
+  // 에러 화면
+  if (loadError) {
+    return (
+      <View style={styles.errorContainer}>
+        <Octicons name="alert-fill" size={40} color="#ffc219ff" />
+        <Text style={styles.errorTitle}>네트워크 오류</Text>
+        <Text style={styles.errorText}>설정을 불러올 수 없습니다</Text>
+        
+        <TouchableOpacity 
+          style={styles.retryButton}
+          onPress={loadInitialData}
+        >
+          <Text style={styles.retryButtonText}>다시 시도하기</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
 
   return (
     <ScrollView
@@ -150,19 +241,25 @@ const ManualControl = () => {
             <Text style={[styles.modeText, controlMode.door === 'manual' && styles.activeText]}>
               수동
             </Text>
-            <Switch 
-              trackColor={{false: '#ff9800', true: '#4CAF50'}}
-              thumbColor='#fff'
-              value={controlMode.door === 'auto'}
-              onValueChange={() => toggleMode('door')}
-            />
+            
+            {isLoading.door ? (
+              <ActivityIndicator size="small" color="#4CAF50" />
+            ) : (
+              <Switch 
+                trackColor={{false: '#ff9800', true: '#4CAF50'}}
+                thumbColor='#fff'
+                value={controlMode.door === 'auto'}
+                onValueChange={() => toggleMode('door')}
+              />
+            )}
+            
             <Text style={[styles.modeText, controlMode.door === 'auto' && styles.activeText]}>
               자동
             </Text>
           </View>
         </View>
         
-        {controlMode.door === 'manual' && (
+        {controlMode.door === 'manual' && !isLoading.door && (
           <View style={styles.controlRow}>
             <Text style={styles.controlLabel}>문 제어</Text>
             <View style={styles.buttonGroup}>
@@ -196,19 +293,25 @@ const ManualControl = () => {
             <Text style={[styles.modeText, controlMode.humPen === 'manual' && styles.activeText]}>
               수동
             </Text>
-            <Switch 
-              trackColor={{false: '#ff9800', true: '#4CAF50'}}
-              thumbColor='#fff'
-              value={controlMode.humPen === 'auto'}
-              onValueChange={() => toggleMode('humPen')}
-            />
+            
+            {isLoading.humPen ? (
+              <ActivityIndicator size="small" color="#4CAF50" />
+            ) : (
+              <Switch 
+                trackColor={{false: '#ff9800', true: '#4CAF50'}}
+                thumbColor='#fff'
+                value={controlMode.humPen === 'auto'}
+                onValueChange={() => toggleMode('humPen')}
+              />
+            )}
+            
             <Text style={[styles.modeText, controlMode.humPen === 'auto' && styles.activeText]}>
               자동
             </Text>
           </View>
         </View>
         
-        {controlMode.humPen === 'manual' && (
+        {controlMode.humPen === 'manual' && !isLoading.humPen && (
           <View style={styles.controlRow}>
             <Text style={styles.controlLabel}>팬 가동</Text>
             <View style={styles.buttonGroup}>
@@ -242,19 +345,25 @@ const ManualControl = () => {
             <Text style={[styles.modeText, controlMode.airPen === 'manual' && styles.activeText]}>
               수동
             </Text>
-            <Switch 
-              trackColor={{false: '#ff9800', true: '#4CAF50'}}
-              thumbColor='#fff'
-              value={controlMode.airPen === 'auto'}
-              onValueChange={() => toggleMode('airPen')}
-            />
+            
+            {isLoading.airPen ? (
+              <ActivityIndicator size="small" color="#4CAF50" />
+            ) : (
+              <Switch 
+                trackColor={{false: '#ff9800', true: '#4CAF50'}}
+                thumbColor='#fff'
+                value={controlMode.airPen === 'auto'}
+                onValueChange={() => toggleMode('airPen')}
+              />
+            )}
+            
             <Text style={[styles.modeText, controlMode.airPen === 'auto' && styles.activeText]}>
               자동
             </Text>
           </View>
         </View>
         
-        {controlMode.airPen === 'manual' && (
+        {controlMode.airPen === 'manual' && !isLoading.airPen && (
           <View style={styles.controlRow}>
             <Text style={styles.controlLabel}>팬 가동</Text>
             <View style={styles.buttonGroup}>
@@ -288,19 +397,25 @@ const ManualControl = () => {
             <Text style={[styles.modeText, controlMode.led === 'manual' && styles.activeText]}>
               수동
             </Text>
-            <Switch 
-              trackColor={{false: '#ff9800', true: '#4CAF50'}}
-              thumbColor='#fff'
-              value={controlMode.led === 'auto'}
-              onValueChange={() => toggleMode('led')}
-            />
+            
+            {isLoading.led ? (
+              <ActivityIndicator size="small" color="#4CAF50" />
+            ) : (
+              <Switch 
+                trackColor={{false: '#ff9800', true: '#4CAF50'}}
+                thumbColor='#fff'
+                value={controlMode.led === 'auto'}
+                onValueChange={() => toggleMode('led')}
+              />
+            )}
+            
             <Text style={[styles.modeText, controlMode.led === 'auto' && styles.activeText]}>
               자동
             </Text>
           </View>
         </View>
         
-        {controlMode.led === 'manual' && (
+        {controlMode.led === 'manual' && !isLoading.led && (
           <View style={styles.controlRow}>
             <Text style={styles.controlLabel}>조명</Text>
             <View style={styles.buttonGroup}>
@@ -339,6 +454,61 @@ const styles = StyleSheet.create({
   container: {
     backgroundColor: '#fff',
     padding: 15
+  },
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#fff'
+  },
+  loadingText: {
+    marginTop: 15,
+    fontSize: 16,
+    color: '#666'
+  },
+  errorContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#fff',
+    padding: 40
+  },
+  errorIcon: {
+    width: 80,
+    height: 80,
+    backgroundColor: '#FFD700',
+    borderRadius: 40,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 24
+  },
+  errorIconText: {
+    fontSize: 48,
+    color: '#fff'
+  },
+  errorTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#333',
+    marginBottom: 12
+  },
+  errorText: {
+    fontSize: 14,
+    color: '#666',
+    marginBottom: 32
+  },
+  retryButton: {
+    backgroundColor: '#4CAF50',
+    paddingHorizontal: 40,
+    paddingVertical: 14,
+    borderRadius: 8,
+    minWidth: 200,
+    alignItems: 'center'
+  },
+  retryButtonText: {
+    color: '#fff',
+    fontSize: 16,
+    fontWeight: '600'
   },
   card: {
     backgroundColor: '#fff',
