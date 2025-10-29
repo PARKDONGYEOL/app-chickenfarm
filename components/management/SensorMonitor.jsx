@@ -83,32 +83,3 @@ const SensorMonitor = ({ sensorData, onAlertGenerated }) => {
 }
 
 export default SensorMonitor
-
-/**
- * 사용 예시:
- *
- * const [sensorData, setSensorData] = useState({
- *   temperature: { value: 28, location: 'Zone A' },
- *   humidity: { value: 65, location: 'Zone B' },
- *   light: { value: 150, location: 'Building 1' },
- *   ammonia: { value: 15, location: 'Building 2' },
- *   co2: { value: 1200, location: 'Zone C' },
- *   co: { value: 10, location: 'Ventilation System' },
- *   no2: { value: 0.2, location: 'Zone D' },
- * })
- *
- * const handleAlertGenerated = (alert) => {
- *   console.log('New alert generated:', alert)
- *   // 알림 목록에 추가하거나 다른 처리
- * }
- *
- * return (
- *   <View>
- *     <SensorMonitor
- *       sensorData={sensorData}
- *       onAlertGenerated={handleAlertGenerated}
- *     />
- *     {/* 다른 컴포넌트들 */}
- *   </View>
- * )
- */
