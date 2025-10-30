@@ -330,7 +330,7 @@ const styles = StyleSheet.create({
     paddingVertical: 15,
     borderRadius: 10,
     marginBottom: 15,
-    minWidth: 200,
+    minWidth: 200, // 33
     alignItems: 'center'
   },
   retryButtonText: {
