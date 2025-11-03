@@ -2,6 +2,7 @@ import { useRouter } from 'expo-router'
 import * as SecureStore from 'expo-secure-store'
 import { StyleSheet, Text, TouchableOpacity, View } from 'react-native'
 import Button from '../../../components/Button'
+import MaterialIcons from '@expo/vector-icons/MaterialIcons';
 
 const ManagementScreen = () => {
   const router = useRouter()
@@ -11,7 +12,11 @@ const ManagementScreen = () => {
   }
 
   const handleCCTVPress = () => {
-    router.push('/(tabs)/(home)/management/cctv')
+    router.push('/management/cctv')
+  }
+
+  const handleKioskPress = () => {
+    router.push('/management/Kiosk')
   }
 
   const handleLogout = async () => {
@@ -45,6 +50,15 @@ const ManagementScreen = () => {
           variant="secondary"
           onPress={handleCCTVPress}
         />
+
+        <Button
+          title="키오스크 제어"
+          icon="touch-app"
+          iconFamily="MaterialIcons"
+          variant="success"
+          onPress={handleKioskPress}
+        />
+
       </View>
     </View>
     </View>
