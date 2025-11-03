@@ -20,8 +20,8 @@ export const USE_MOCK_DATA = false  // ✅ 백엔드 서버 연결
 // const BASE_URL = 'http://localhost:8080'
 
 // 실제 기기 또는 Expo Go에서 테스트 시 (같은 Wi-Fi 네트워크)
-// 현재 컴퓨터 IP: 192.168.30.146
-const BASE_URL = 'http://192.168.30.91:8081'
+// 현재 작동되는 api DB주소
+const BASE_URL = 'http://192.168.30.111:8080/api'
 
 // Axios 인스턴스 생성
 const api = axios.create({
