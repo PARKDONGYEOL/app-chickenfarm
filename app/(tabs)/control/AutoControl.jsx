@@ -19,6 +19,7 @@ const AutoControl = () => {
 
   //저장중 로딩 상태
   const [loading, setLoading] = useState(false);
+  
   //전체 로딩 화면(로딩중..)
   const [isInitialLoading, setIsInitialLoading] = useState(true);
   const [loadError, setLoadError] = useState(false);

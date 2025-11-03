@@ -21,7 +21,7 @@ const signup = () => {
     }
 
     try {
-      const response = await axios.post("http://192.168.30.152:8080/api/member/signup", {
+      const response = await axios.post("http://192.168.30.111:8080/api/member/signup", {
         memId: signupInfo.memId,
         memPw: signupInfo.memPw,
         name: signupInfo.name,

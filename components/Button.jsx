@@ -1,14 +1,18 @@
 import { StyleSheet, Text, TouchableOpacity } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { Ionicons, MaterialIcons } from '@expo/vector-icons';
 
 const Button = ({
   title='버튼',
   onPress,
   icon,
+  iconFamily = 'Ionicons',
   variant = 'primary',
   disabled = false,
   ...props
 }) => {
+
+  const IconComponent = iconFamily === 'MaterialIcons' ? MaterialIcons : Ionicons;
+
   return (
     <TouchableOpacity
       style={[
@@ -22,7 +26,7 @@ const Button = ({
       {...props}
     >
       {icon && (
-        <Ionicons
+        <IconComponent
           name={icon}
           size={24}
           color="#FFFFFF"
