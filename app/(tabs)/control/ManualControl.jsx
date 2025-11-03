@@ -160,7 +160,6 @@ const ManualControl = () => {
         timeout: 5000
       });
     } catch(e) {
-      // 조용히 실패
     }
   }
   
@@ -174,7 +173,6 @@ const ManualControl = () => {
         timeout: 5000
       });
     } catch(e) {
-      // 조용히 실패
     }
   }
 
