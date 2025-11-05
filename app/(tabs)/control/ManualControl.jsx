@@ -41,10 +41,10 @@ const ManualControl = () => {
   const activeRequestsRef = useRef(0);
 
   // 재시도 함수
-  const retryRequest = async (whatToRetry, maxRetries = 10) => {
+  const retryRequest = async (retry, maxRetries = 10) => {
     for (let i = 0; i < maxRetries; i++) {
       try {
-        const result = await whatToRetry();
+        const result = await retry();
         return { success: true, data: result };
       } catch(e) {
         if (i < maxRetries - 1) {
@@ -188,6 +188,11 @@ const ManualControl = () => {
     loadInitialData();
   }, [])
 
+  const handleLogout = async () => {
+    await SecureStore.deleteItemAsync("loginInfo")
+    router.replace("/authorization/signin")
+  }
+
   // 초기 로딩 화면
   if (isInitialLoading) {
     return (
@@ -217,6 +222,14 @@ const ManualControl = () => {
   }
 
   return (
+    <View style={styles.wrapper}>
+    <View style={styles.pageHeader}> 
+      <Text style={styles.headerTitle}>수동 제어</Text>
+      <TouchableOpacity onPress={handleLogout}>
+        <Text style={styles.logoutText}>로그아웃</Text>
+      </TouchableOpacity>
+    </View>
+   
     <ScrollView
       refreshControl={
         <RefreshControl 
@@ -443,12 +456,37 @@ const ManualControl = () => {
       </TouchableOpacity>
    
     </ScrollView>
+  </View>
   )
 }
 
 export default ManualControl
 
 const styles = StyleSheet.create({
+    wrapper: {
+    flex: 1,
+    backgroundColor: '#fff',
+  },
+  pageHeader: { 
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingTop: 50,
+    paddingBottom: 12,
+    backgroundColor: '#FFFFFF',
+    borderBottomWidth: 1,
+    borderBottomColor: '#E0E0E0',
+  },
+  headerTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#212121',
+  },
+  logoutText: {
+    color: '#007AFF',
+    fontSize: 16,
+  },
   container: {
     backgroundColor: '#fff',
     padding: 15
@@ -601,7 +639,7 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     borderWidth: 1,
     borderColor: '#ddd',
-    marginBottom : 30,
+    marginBottom : 70,
     alignItems : 'center'
   }
 })

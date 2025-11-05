@@ -2,7 +2,20 @@ import { Stack } from 'expo-router'
 
 const ControlLayout = () => {
   return (
-    <Stack screenOptions={{headerShown : false}} />
+    <Stack>
+      <Stack.Screen
+        name="ManualControl"
+        options={{
+          headerShown: false,
+        }}
+      />
+      <Stack.Screen
+        name="AutoControl"
+        options={{
+          headerShown: false,
+        }}
+      />
+    </Stack>
   )
 }
 
